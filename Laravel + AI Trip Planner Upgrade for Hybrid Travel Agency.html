@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AI Trip Planner — Demo (Beautiful UI)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ===== Design System ===== */
+  :root{
+    --bg: #0b1020;
+    --bg-soft: #0f1730;
+    --panel: rgba(255,255,255,.06);
+    --panel-strong: rgba(255,255,255,.12);
+    --ink: #e7e9f3;
+    --ink-dim: #a9b1c7;
+    --primary: #7c8cff;
+    --primary-2: #48d7ff;
+    --ok: #16a34a;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --b: rgba(255,255,255,.12);
+    --chip: rgba(255,255,255,.1);
+    --shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+    --radius: 16px;
+    --ring: 0 0 0 2px rgba(124,140,255,.15), 0 0 0 6px rgba(72,215,255,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #153a73 0%, transparent 60%),
+      radial-gradient(900px 700px at 110% 10%, #1b2250 0%, transparent 60%),
+      radial-gradient(700px 800px at 80% 120%, #10233f 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Inter, Roboto, Arial, "Noto Sans", sans-serif;
+    letter-spacing:.2px;
+  }
+  /* Header */
+  header{
+    position:sticky; top:0; z-index:10;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 18px;
+    background: linear-gradient(90deg, rgba(17,24,39,.75), rgba(17,24,39,.25));
+    backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--b);
+  }
+  header .brand{
+    display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.4px;
+  }
+  .brand .logo{
+    width:28px;height:28px;border-radius:8px;
+    background: conic-gradient(from 120deg, var(--primary), var(--primary-2));
+    box-shadow: var(--shadow);
+  }
+  header .meta{color:var(--ink-dim); font-size:12px}
+  /* Layout */
+  .container{max-width:1200px;margin:22px auto;padding:0 16px;display:grid;gap:18px;grid-template-columns:1.15fr .85fr}
+  @media (max-width:1024px){ .container{grid-template-columns:1fr} .aside{position:relative; top:auto} }
+  /* Panels */
+  .panel{background:var(--panel); border:1px solid var(--b); border-radius:var(--radius); box-shadow:var(--shadow)}
+  .panel-inner{padding:16px}
+  .panel-header{padding:14px 16px;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;border-radius:var(--radius) var(--radius) 0 0;background:var(--panel-strong)}
+  .title{font-size:14px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--ink-dim)}
+  .badge{font-size:11px;color:var(--ink);padding:4px 8px;border:1px solid var(--b);border-radius:999px;background:var(--chip)}
+  .badges{display:flex;gap:8px;flex-wrap:wrap}
+  /* Form */
+  label{font-size:12px;color:var(--ink-dim)}
+  input,select,button,textarea{
+    width:100%; padding:12px 12px;
+    background:rgba(255,255,255,.06); color:var(--ink);
+    border:1px solid var(--b); border-radius:12px; outline:none;
+    transition:.15s ease; box-shadow: inset 0 0 0 rgba(0,0,0,0);
+  }
+  input:focus, select:focus, textarea:focus{ box-shadow: var(--ring); border-color: rgba(124,140,255,.5);}
+  button{cursor:pointer; font-weight:600}
+  .btn{background:linear-gradient(180deg, rgba(124,140,255,.9), rgba(124,140,255,.7)); border-color:transparent}
+  .btn:hover{filter:brightness(1.05)}
+  .btn.ghost{background:transparent; border-color:var(--b)}
+  .btn.ghost:hover{background:rgba(255,255,255,.06)}
+  .btn.danger{background:linear-gradient(180deg, rgba(239,68,68,.95), rgba(239,68,68,.8))}
+  .btn.dark{background:linear-gradient(180deg,#1f2937,#0f172a); border-color:#334155}
+  .row{display:flex; gap:12px; flex-wrap:wrap}
+  .row>*{flex:1 1 240px}
+  h3{margin:10px 0 12px}
+  .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(124,140,255,.15);margin-left:6px;border:1px solid rgba(124,140,255,.25)}
+  /* KPI */
+  .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .kpi .box{padding:14px;border:1px dashed var(--b);border-radius:14px;background:rgba(255,255,255,.04)}
+  .kpi .muted{color:var(--ink-dim);font-size:12px}
+  .kpi .val{font-weight:800;font-size:18px}
+  /* Progress */
+  .progress{height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+  .bar{height:100%;width:0;background:linear-gradient(90deg, var(--primary), var(--primary-2));transition:width .25s ease}
+  /* Aside */
+  .aside{position:sticky; top:82px; align-self:start}
+  pre{
+    background:#0b1220; color:#d2d7ff; padding:14px; border-radius:14px; 
+    border:1px solid var(--b); max-height:360px; overflow:auto; font-size:12px; line-height:1.4;
+  }
+  ul.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column-reverse;gap:8px;max-height:240px;overflow:auto}
+  ul.log li{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05); border:1px solid var(--b); font-size:12px}
+  /* Toggle */
+  .toolbar{display:flex; gap:8px; align-items:center}
+  .toggle{display:flex;align-items:center;gap:8px}
+  .switch{width:42px;height:24px;border-radius:999px;background:rgba(255,255,255,.2);position:relative;border:1px solid var(--b)}
+  .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s ease}
+  .switch.active .knob{left:20px;background:linear-gradient(180deg,#fff,#e5e7eb)}
+  .muted{color:var(--ink-dim)}
+  .space{height:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <div>AI Trip Planner <span class="subtitle">— Editable Itinerary (Demo)</span></div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="toggle">
+      <div class="switch" id="themeSwitch" title="Toggle theme"><div class="knob"></div></div>
+      <span class="meta" id="clock"></span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- MAIN -->
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="title">Itinerary Builder</div>
+        <div class="subtitle">Edit → Save Draft → Book</div>
+      </div>
+      <div class="badges">
+        <span class="badge" id="draftStatus">No draft</span>
+        <span class="badge" id="availability">Availability: unknown</span>
+      </div>
+    </div>
+    <div class="panel-inner">
+      <!-- Dates -->
+      <div class="panel panel-inner" style="padding:16px; background:rgba(255,255,255,.04);">
+        <div class="row">
+          <div>
+            <label>Start date</label>
+            <input type="date" id="start">
+          </div>
+          <div>
+            <label>End date</label>
+            <input type="date" id="end">
+          </div>
+        </div>
+        <div class="space"></div>
+        <div class="subtitle">Change dates → totals recalc. Drafts expire in <strong id="ttl">—</strong>.</div>
+      </div>
+      <div class="space"></div>
+      <!-- Flights -->
+      <div class="panel panel-inner">
+        <h3>Flights <span class="chip">AI suggestion</span></h3>
+        <div class="row">
+          <div>
+            <label>Selected flight</label>
+            <select id="flight">
+              <option value="AI-123|420">AI-123 · 09:15 → 12:40 · $420</option>
+              <option value="HY-456|380">HY-456 · 13:10 → 16:30 · $380</option>
+              <option value="ZX-789|510">ZX-789 · 19:45 → 23:05 · $510</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn ghost" onclick="swap('flight')">Swap</button>
+          </div>
+        </div>
+      </div>
+      <div class="space"></div>
+      <!-- Hotels -->
+      <div class="panel panel-inner">
+        <h3>Hotel <span class="chip">Local listing</span></h3>
+        <div class="row">
+          <div>
+            <label>Selected hotel</label>
+            <select id="hotel">
+              <option value="Sunrise Resort|150">Sunrise Resort · $150/nt</option>
+              <option value="Hybrid Marina|120">Hybrid Marina · $120/nt</option>
+              <option value="AI Grand|210">AI Grand · $210/nt</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn ghost" onclick="swap('hotel')">Swap</button>
+          </div>
+        </div>
+      </div>
+      <div class="space"></div>
+      <!-- Activities -->
+      <div class="panel panel-inner">
+        <h3>Activities</h3>
+        <div class="row">
+          <select id="activityPool">
+            <option value="City Tour|60">City Tour · $60</option>
+            <option value="Snorkeling|80">Snorkeling · $80</option>
+            <option value="Museum Pass|35">Museum Pass · $35</option>
+          </select>
+          <button class="btn ghost" onclick="addActivity()">Add</button>
+          <button class="btn danger" onclick="clearActivities()">Clear</button>
+        </div>
+        <div id="activities" class="subtitle" style="margin-top:12px"></div>
+      </div>
+      <div class="space"></div>
+      <!-- KPI + Actions -->
+      <div class="panel panel-inner">
+        <div class="kpi">
+          <div class="box">
+            <div class="muted">Nights</div>
+            <div id="kNights" class="val">0</div>
+          </div>
+          <div class="box">
+            <div class="muted">Activities Subtotal</div>
+            <div id="kAct" class="val">$0</div>
+          </div>
+          <div class="box">
+            <div class="muted">Total</div>
+            <div id="total" class="val">$0</div>
+          </div>
+        </div>
+        <div class="space"></div>
+        <div class="row">
+          <button class="btn" onclick="saveDraft()">Save Draft (7 days)</button>
+          <button class="btn dark" onclick="loadDraft()">Load Draft</button>
+          <button class="btn ghost" onclick="refreshRates()">Refresh Prices (mock)</button>
+          <div style="flex:1"></div>
+          <button class="btn" onclick="bookNow()">Book Now</button>
+        </div>
+      </div>
+      <div class="space"></div>
+      <!-- Progress -->
+      <div class="panel panel-inner">
+        <div class="subtitle">Availability check</div>
+        <div class="progress"><div id="bar" class="bar"></div></div>
+        <div class="subtitle" id="barMsg" style="margin-top:6px">Idle</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ASIDE -->
+  <aside class="panel aside">
+    <div class="panel-header">
+      <div class="title">Live Output</div>
+      <div class="badges">
+        <span class="badge">Payload</span><span class="badge">Response</span>
+        <button class="btn ghost" onclick="copyJSON()">Copy JSON</button>
+      </div>
+    </div>
+    <div class="panel-inner">
+      <pre id="json">{}</pre>
+      <div class="space"></div>
+      <div class="title" style="margin-bottom:8px">Activity Log</div>
+      <ul class="log" id="log"></ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+  // ===== Helpers & State =====
+  const $ = id => document.getElementById(id);
+  const ONE_DAY = 24*60*60*1000, TTL_DAYS = 7, TTL_MS = TTL_DAYS*ONE_DAY;
+  const fmt = n => "$" + Number(n).toFixed(2);
+  const state = { start:null, end:null, flight:"AI-123|420", hotel:"Sunrise Resort|150", activities:[] };
+  let draftMeta = null;
+
+  // Theme toggle
+  const switchEl = $('themeSwitch');
+  switchEl.addEventListener('click', ()=>{
+    switchEl.classList.toggle('active');
+    if(switchEl.classList.contains('active')){
+      // Light theme
+      document.documentElement.style.setProperty('--bg','#f6f7fb');
+      document.documentElement.style.setProperty('--bg-soft','#eef2ff');
+      document.documentElement.style.setProperty('--panel','rgba(255,255,255,1)');
+      document.documentElement.style.setProperty('--panel-strong','#fff');
+      document.documentElement.style.setProperty('--ink','#0b1220');
+      document.documentElement.style.setProperty('--ink-dim','#475569');
+      document.documentElement.style.setProperty('--b','#e5e7eb');
+      document.documentElement.style.setProperty('--chip','#eef2ff');
+      document.documentElement.style.setProperty('--shadow','0 10px 30px rgba(2,6,23,.08)');
+    } else {
+      // Dark theme (default)
+      location.reload(); // simplest reset for demo
+    }
+  });
+
+  function now(){ return new Date().toLocaleString(); }
+  function log(msg){ const li=document.createElement('li'); li.textContent=`[${now()}] ${msg}`; $('log').prepend(li); }
+  function parseVal(v){ const [name, price] = v.split("|"); return {name, price:+price}; }
+  function nights(){ if(!state.start||!state.end) return 0; const s=new Date(state.start), e=new Date(state.end); return Math.max(0, Math.round((e-s)/ONE_DAY)); }
+
+  function totals(){
+    const f=parseVal(state.flight), h=parseVal(state.hotel), n=nights();
+    const acts=state.activities.map(parseVal), actSum=acts.reduce((a,b)=>a+b.price,0);
+    return { flight:f.price, hotel:h.price*Math.max(1,n), activities:actSum, total:f.price+h.price*Math.max(1,n)+actSum };
+  }
+  function buildPayload(){
+    return {
+      trip:{
+        start:state.start, end:state.end, nights:nights(),
+        flight:parseVal(state.flight),
+        hotel:{...parseVal(state.hotel), nights:nights()},
+        activities:state.activities.map(parseVal),
+        totals:totals()
+      },
+      meta:{
+        draftedAt: draftMeta? new Date(draftMeta._savedAt).toISOString():null,
+        expAt: draftMeta? new Date(draftMeta._exp).toISOString():null
+      }
+    }
+  }
+  function render(){
+    $('kNights').textContent = nights();
+    const t=totals(); $('kAct').textContent=fmt(t.activities); $('total').textContent=fmt(t.total);
+    $('activities').innerHTML = state.activities.length
+      ? state.activities.map((v,i)=>`<div style="display:flex;gap:8px;align-items:center;margin:6px 0">
+          <span class="badge">${parseVal(v).name}</span>
+          <span class="subtitle">${fmt(parseVal(v).price)}</span>
+          <button class="btn ghost" style="padding:6px 10px" onclick="removeActivity(${i})">Remove</button>
+        </div>`).join("")
+      : '<span class="subtitle">No activities yet.</span>';
+    $('json').textContent = JSON.stringify(buildPayload(), null, 2);
+  }
+
+  // Events
+  $('start').addEventListener('change', e=>{ state.start=e.target.value; log("Changed start date"); render(); });
+  $('end').addEventListener('change', e=>{ state.end=e.target.value; log("Changed end date"); render(); });
+  $('flight').addEventListener('change', ()=>swap('flight'));
+  $('hotel').addEventListener('change', ()=>swap('hotel'));
+  function swap(kind){ state[kind]=$(kind).value; log(`Changed ${kind} → ${parseVal(state[kind]).name}`); render(); }
+
+  function addActivity(){ const v=$('activityPool').value; state.activities.push(v); log(`Added activity: ${parseVal(v).name}`); render(); }
+  function removeActivity(i){ const [v]=state.activities.splice(i,1); log(`Removed activity: ${parseVal(v).name}`); render(); }
+  function clearActivities(){ state.activities=[]; log("Cleared activities"); render(); }
+
+  // Draft + TTL
+  function saveDraft(){
+    const payload = { ...state, _savedAt: Date.now(), _exp: Date.now()+TTL_MS };
+    localStorage.setItem('itinerary_demo', JSON.stringify(payload));
+    draftMeta = payload; $('draftStatus').textContent="Draft saved"; updateTTL(); render(); log("Draft saved (7 days)");
+  }
+  function loadDraft(){
+    const raw=localStorage.getItem('itinerary_demo');
+    if(!raw) return alert("No draft found.");
+    const d=JSON.parse(raw);
+    if(Date.now()>d._exp){ localStorage.removeItem('itinerary_demo'); $('draftStatus').textContent="No draft"; draftMeta=null; return alert("Draft expired."); }
+    Object.assign(state,{start:d.start,end:d.end,flight:d.flight,hotel:d.hotel,activities:d.activities||[]});
+    $('start').value=state.start||""; $('end').value=state.end||""; $('flight').value=state.flight; $('hotel').value=state.hotel;
+    draftMeta=d; $('draftStatus').textContent="Draft loaded"; updateTTL(); render(); log("Draft loaded");
+  }
+  function updateTTL(){
+    if(!draftMeta){ $('ttl').textContent="—"; return; }
+    const left=Math.max(0,draftMeta._exp-Date.now()); const d=Math.floor(left/ONE_DAY), h=Math.floor((left%ONE_DAY)/3600000);
+    $('ttl').textContent = `${d}d ${h}h`;
+  }
+  setInterval(()=>{ updateTTL(); $('clock').textContent=new Date().toLocaleString(); }, 1000);
+
+  // Availability & price refresh (mock)
+  function refreshRates(){
+    if(!state.start||!state.end) return alert("Pick dates first.");
+    simulate("Refreshing prices & availability...");
+    setTimeout(()=>{
+      // mutate selection price lightly
+      function mutate(sel,min,max){
+        const el=$(sel); const [name,price]=el.value.split("|");
+        const delta = Math.round((Math.random()*(max-min)+min));
+        const newPrice = Math.max(40,(+price+delta));
+        [...el.options].forEach(op=>{ if(op.selected){ op.textContent = op.textContent.replace(/\$\d+/, `$${newPrice}`); op.value=`${name}|${newPrice}`; }});
+      }
+      mutate('flight',-40,60); mutate('hotel',-15,25);
+
+      const ok = Math.random()>.2;
+      $('availability').textContent = ok? "Availability: good" : "Availability: limited";
+      $('availability').style.borderColor = ok? "rgba(22,163,74,.5)" : "rgba(245,158,11,.5)";
+      $('availability').style.background = ok? "rgba(22,163,74,.12)" : "rgba(245,158,11,.12)";
+      render(); done(ok? "Prices updated, seats available." : "Prices updated, limited availability."); log("Refreshed prices & checked availability (mock)");
+    }, 1100);
+  }
+  function simulate(msg){ $('barMsg').textContent=msg; let w=0; const id=setInterval(()=>{ w=Math.min(100,w+8); $('bar').style.width=w+'%'; if(w>=100) clearInterval(id); }, 90); }
+  function done(msg){ $('barMsg').textContent=msg; setTimeout(()=>{$('bar').style.width='0%';},700); }
+
+  // Booking (mock)
+  function bookNow(){
+    if(!state.start||!state.end) return alert("Please select dates first.");
+    const payload=buildPayload(); $('json').textContent=JSON.stringify(payload,null,2);
+    simulate("Submitting booking...");
+    setTimeout(()=>{
+      const orderId="ORD-"+Math.random().toString(36).slice(2,8).toUpperCase();
+      const resp={ orderId, status:"CONFIRMED", paid:false, total:payload.trip.totals.total, createdAt:new Date().toISOString() };
+      $('json').textContent = JSON.stringify({ request:payload, response:resp }, null, 2);
+      done("Booking confirmed (mock)."); log(`Booking confirmed: ${orderId}`);
+      alert(`Booking confirmed!\nOrder: ${orderId}\nTotal: ${fmt(payload.trip.totals.total)}`);
+    }, 1300);
+  }
+  function copyJSON(){ navigator.clipboard.writeText($('json').textContent).then(()=>log("Copied JSON to clipboard")); }
+
+  // Init defaults
+  (function init(){
+    const t=new Date(), p3=new Date(Date.now()+3*ONE_DAY);
+    $('start').valueAsDate=t; $('end').valueAsDate=p3;
+    state.start=t.toISOString().slice(0,10); state.end=p3.toISOString().slice(0,10);
+    render(); updateTTL(); log("Initialized demo");
+  })();
+</script>
+</body>
+</html>
